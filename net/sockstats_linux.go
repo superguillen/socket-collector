@@ -6,7 +6,7 @@ import (
 	//"fmt"
 	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
-	"strconv"
+	//"strconv"
 )
 
 // http://students.mimuw.edu.pl/lxr/source/include/net/tcp_states.h
@@ -24,25 +24,42 @@ var tcpStatuses = map[uint8]string{
 	11: "CLOSING",
 }
 
-func GetSockStats() map[string]SockStat {
+func GetSockStats() ([]SockStat,[]uint16) {
 	res, diagErr := netlink.SocketDiagTCPInfo(unix.AF_INET)
 	if diagErr != nil {
 		panic(diagErr)
 	}
 
 	//records := make(map[string]SockStat)
-	records := make(map[string]SockStat)
+	var records []SockStat
+	// var listen_ports []Port
+	var listen_ports []uint16
+
 	//var sockstat SockStat
 	for idx, _ := range res {
 		var sockstat SockStat
+		// var listen_port Port
 		//record := res[idx]
 		if record := res[idx]; record != nil {
 			
+
+
+			//Add tcpStatus String name
 			var tcp_status string
 			if record.TCPInfo.State <= 11 {
 				tcp_status = tcpStatuses[record.TCPInfo.State]
 			} else {
 				tcp_status = "NONE"
+			}
+
+			//If Listen port, add to array
+			if tcp_status == "LISTEN" {
+				// listen_port = Port{
+				// 	PortNum: record.InetDiagMsg.ID.SourcePort,
+				// 	Addr: record.InetDiagMsg.ID.Source.String(),
+				// }
+				// listen_ports = append(listen_ports,listen_port)
+				listen_ports = append(listen_ports,record.InetDiagMsg.ID.SourcePort)
 			}
 
 			sockstat = SockStat{
@@ -110,8 +127,9 @@ func GetSockStats() map[string]SockStat {
 		//fmt.Printf("%+v\n", record.InetDiagMsg)
 		//fmt.Printf("%+v\n", record.TCPInfo)
 		//fmt.Printf("%+v\n", sockstat)
-		id := sockstat.Local_Addr + "_" + strconv.Itoa(int(sockstat.Local_Port)) + "_" + sockstat.Remote_Addr + "_" + strconv.Itoa(int(sockstat.Remote_Port))
-		records[id] = sockstat
+		//id := sockstat.Local_Addr + "_" + strconv.Itoa(int(sockstat.Local_Port)) + "_" + sockstat.Remote_Addr + "_" + strconv.Itoa(int(sockstat.Remote_Port))
+		//records[id] = sockstat
+		records = append(records,sockstat)
 	}
-	return records
+	return records,listen_ports
 }
