@@ -8,4 +8,7 @@ require (
 	golang.org/x/sys v0.5.0
 )
 
-require github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
+require (
+	github.com/montanaflynn/stats v0.7.0 // indirect
+	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
+)

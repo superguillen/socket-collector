@@ -3,7 +3,7 @@
 package sockstats
 
 import (
-	//"fmt"
+	// "fmt"
 	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
 	//"strconv"
@@ -11,6 +11,7 @@ import (
 
 // http://students.mimuw.edu.pl/lxr/source/include/net/tcp_states.h
 var tcpStatuses = map[uint8]string{
+	0: "INVALID",
 	1: "ESTABLISHED",
 	2: "SYN_SENT",
 	3: "SYN_RECV",
@@ -24,26 +25,22 @@ var tcpStatuses = map[uint8]string{
 	11: "CLOSING",
 }
 
-func GetSockStats() ([]SockStat,[]uint16) {
+func GetConnections() ([]SockStat,[]uint16) {
 	res, diagErr := netlink.SocketDiagTCPInfo(unix.AF_INET)
 	if diagErr != nil {
 		panic(diagErr)
 	}
 
-	//records := make(map[string]SockStat)
 	var records []SockStat
-	// var listen_ports []Port
 	var listen_ports []uint16
 
-	//var sockstat SockStat
 	for idx, _ := range res {
 		var sockstat SockStat
-		// var listen_port Port
-		//record := res[idx]
-		if record := res[idx]; record != nil {
-			
 
-
+		// fmt.Printf("%+v\n", idx)
+		if record := res[idx]; record != nil && record.TCPInfo != nil && record.InetDiagMsg.ID.SourcePort > 0 {
+		// if record := res[idx]; record.TCPInfo != nil  {
+			//fmt.Printf("%+v\n", record)
 			//Add tcpStatus String name
 			var tcp_status string
 			if record.TCPInfo.State <= 11 {
@@ -54,11 +51,6 @@ func GetSockStats() ([]SockStat,[]uint16) {
 
 			//If Listen port, add to array
 			if tcp_status == "LISTEN" {
-				// listen_port = Port{
-				// 	PortNum: record.InetDiagMsg.ID.SourcePort,
-				// 	Addr: record.InetDiagMsg.ID.Source.String(),
-				// }
-				// listen_ports = append(listen_ports,listen_port)
 				listen_ports = append(listen_ports,record.InetDiagMsg.ID.SourcePort)
 			}
 
