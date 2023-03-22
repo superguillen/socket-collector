@@ -236,18 +236,22 @@ func roundFloat(val float64, precision uint) float64 {
 	return math.Round(val*ratio) / ratio
 }
 
-func GetConnStatistics(metrics []string, statType StatType) GlobalConnStatistics {
+func GetConnStatistics(metrics []string, statType StatType) (GlobalConnStatistics, error) {
 
 	if metrics == nil {
 		metrics = BASIC_METRICS
 	}
 
-	var status_port ConnStatistics
-	sockstats_list, listen_ports := GetConnections()
-
 	globalConnStadistics := GlobalConnStatistics{
 		IncomingConns: map[Port]ConnStatistics{},
 		OutgoingConns: map[Port]ConnStatistics{},
+	}
+
+	var status_port ConnStatistics
+	sockstats_list, listen_ports, diagErr := GetConnections()
+
+	if diagErr != nil {
+		return globalConnStadistics, diagErr
 	}
 
 	for _, record := range sockstats_list {
@@ -463,5 +467,5 @@ func GetConnStatistics(metrics []string, statType StatType) GlobalConnStatistics
 	// 	// fmt.Printf("%+v\n", port_stat.TCPInfoStatsAvg.Rtt)
 	// }
 
-	return globalConnStadistics
+	return globalConnStadistics, nil
 }

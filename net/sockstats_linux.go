@@ -1,4 +1,5 @@
-//+build linux
+//go:build linux
+// +build linux
 
 package sockstats
 
@@ -11,24 +12,24 @@ import (
 
 // http://students.mimuw.edu.pl/lxr/source/include/net/tcp_states.h
 var tcpStatuses = map[uint8]string{
-	0: "INVALID",
-	1: "ESTABLISHED",
-	2: "SYN_SENT",
-	3: "SYN_RECV",
-	4: "FIN_WAIT1",
-	5: "FIN_WAIT2",
-	6: "TIME_WAIT",
-	7: "CLOSE",
-	8: "CLOSE_WAIT",
-	9: "LAST_ACK",
+	0:  "INVALID",
+	1:  "ESTABLISHED",
+	2:  "SYN_SENT",
+	3:  "SYN_RECV",
+	4:  "FIN_WAIT1",
+	5:  "FIN_WAIT2",
+	6:  "TIME_WAIT",
+	7:  "CLOSE",
+	8:  "CLOSE_WAIT",
+	9:  "LAST_ACK",
 	10: "LISTEN",
 	11: "CLOSING",
 }
 
-func GetConnections() ([]SockStat,[]uint16) {
+func GetConnections() ([]SockStat, []uint16, error) {
 	res, diagErr := netlink.SocketDiagTCPInfo(unix.AF_INET)
 	if diagErr != nil {
-		panic(diagErr)
+		return nil, nil, diagErr
 	}
 
 	var records []SockStat
@@ -39,7 +40,7 @@ func GetConnections() ([]SockStat,[]uint16) {
 
 		// fmt.Printf("%+v\n", idx)
 		if record := res[idx]; record != nil && record.TCPInfo != nil && record.InetDiagMsg.ID.SourcePort > 0 {
-		// if record := res[idx]; record.TCPInfo != nil  {
+			// if record := res[idx]; record.TCPInfo != nil  {
 			//fmt.Printf("%+v\n", record)
 			//Add tcpStatus String name
 			var tcp_status string
@@ -51,7 +52,7 @@ func GetConnections() ([]SockStat,[]uint16) {
 
 			//If Listen port, add to array
 			if tcp_status == "LISTEN" {
-				listen_ports = append(listen_ports,record.InetDiagMsg.ID.SourcePort)
+				listen_ports = append(listen_ports, record.InetDiagMsg.ID.SourcePort)
 			}
 
 			sockstat = SockStat{
@@ -121,7 +122,7 @@ func GetConnections() ([]SockStat,[]uint16) {
 		//fmt.Printf("%+v\n", sockstat)
 		//id := sockstat.Local_Addr + "_" + strconv.Itoa(int(sockstat.Local_Port)) + "_" + sockstat.Remote_Addr + "_" + strconv.Itoa(int(sockstat.Remote_Port))
 		//records[id] = sockstat
-		records = append(records,sockstat)
+		records = append(records, sockstat)
 	}
-	return records,listen_ports
+	return records, listen_ports, nil
 }
