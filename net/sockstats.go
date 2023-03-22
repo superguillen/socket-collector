@@ -77,7 +77,7 @@ type GlobalConnStatistics struct {
 type ConnStatistics struct {
 	TotalConnections uint64
 	NetStats         NetMetrics
-	TCPInfoStats     map[string]float64
+	TCPInfoStats     map[string]interface{}
 	TCPInfoStatsAcum map[string][]float64
 }
 
@@ -267,7 +267,7 @@ func GetConnStatistics(metrics []string, statType StatType) (GlobalConnStatistic
 			status_port, ok = globalConnStadistics.IncomingConns[port]
 			if !ok {
 				globalConnStadistics.IncomingConns[port] = ConnStatistics{
-					TCPInfoStats:     map[string]float64{},
+					TCPInfoStats:     map[string]interface{}{},
 					TCPInfoStatsAcum: map[string][]float64{},
 				}
 
@@ -281,7 +281,7 @@ func GetConnStatistics(metrics []string, statType StatType) (GlobalConnStatistic
 			status_port, ok = globalConnStadistics.OutgoingConns[port]
 			if !ok {
 				globalConnStadistics.OutgoingConns[port] = ConnStatistics{
-					TCPInfoStats:     map[string]float64{},
+					TCPInfoStats:     map[string]interface{}{},
 					TCPInfoStatsAcum: map[string][]float64{},
 				}
 				status_port = globalConnStadistics.OutgoingConns[port]
