@@ -11,7 +11,11 @@ import (
 
 func main() {
 	//Get socket list
-	globalConnStadistics := sockstats.GetConnStatistics(sockstats.BASIC_METRICS, sockstats.BASIC_STATS)
+	globalConnStadistics, diagErr := sockstats.GetConnStatistics(sockstats.BASIC_METRICS, sockstats.BASIC_STATS)
+
+	if diagErr != nil {
+		panic(diagErr)
+	}
 
 	fmt.Printf("=== Incoming connections\n")
 	for key, status := range globalConnStadistics.IncomingConns {
