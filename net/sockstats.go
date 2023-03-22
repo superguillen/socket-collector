@@ -151,7 +151,7 @@ var FullStatsMetrics = map[string][]string{
 	"Min_rtt":                   {"max", "min", "mean"},
 	"Data_segs_in":              {"max", "min", "mean"},
 	"Data_segs_out":             {"max", "min", "mean"},
-	"Delivery_rate":             {"max", "min", "mean"},
+	"Delivery_rate":             {"max", "min", "mean", "p75", "p95", "p99"},
 	"Busy_time":                 {"max", "min", "mean"},
 	"Rwnd_limited":              {"max", "min", "mean"},
 	"Sndbuf_limited":            {"max", "min", "mean"},
@@ -167,7 +167,7 @@ var FullStatsMetrics = map[string][]string{
 
 var BasicStatsMetrics = map[string][]string{
 	"Ca_state":                  {"mean"},
-	"Retransmits":               {"mean"},
+	"Retransmits":               {"mean", "p99"},
 	"Probes":                    {"mean"},
 	"Backoff":                   {"mean"},
 	"Options":                   {"mean"},
@@ -208,7 +208,7 @@ var BasicStatsMetrics = map[string][]string{
 	"Min_rtt":                   {"mean"},
 	"Data_segs_in":              {"mean"},
 	"Data_segs_out":             {"mean"},
-	"Delivery_rate":             {"mean"},
+	"Delivery_rate":             {"mean", "p99"},
 	"Busy_time":                 {"mean"},
 	"Rwnd_limited":              {"mean"},
 	"Sndbuf_limited":            {"mean"},
@@ -229,7 +229,7 @@ var FULL_METRICS = []string{"Ca_state", "Retransmits", "Probes", "Backoff", "Opt
 	"Bytes_acked", "Bytes_received", "Segs_out", "Segs_in", "Notsent_bytes", "Min_rtt", "Data_segs_in", "Data_segs_out", "Delivery_rate",
 	"Busy_time", "Rwnd_limited", "Sndbuf_limited", "Delivered", "Delivered_ce", "Bytes_sent", "Bytes_retrans", "Dsack_dups", "Reord_seen", "Rcv_ooopack", "Snd_wnd"}
 
-var BASIC_METRICS = []string{"Rtt", "Rttvar", "Min_rtt", "Retransmits", "Total_retrans", "Bytes_sent", "Bytes_received", "Bytes_retrans"}
+var BASIC_METRICS = []string{"Rtt", "Rttvar", "Min_rtt", "Delivery_rate", "Retransmits", "Total_retrans", "Bytes_sent", "Bytes_received", "Bytes_retrans"}
 
 func roundFloat(val float64, precision uint) float64 {
 	ratio := math.Pow(10, float64(precision))
