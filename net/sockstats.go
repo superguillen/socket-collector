@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/montanaflynn/stats"
-	"golang.org/x/exp/slices"
 )
 
 type SockStat struct {
@@ -75,8 +74,6 @@ type GlobalConnStatistics struct {
 }
 
 type ConnStatistics struct {
-	TotalConnections uint64
-	Local_Addr       string
 	NetStats         NetMetrics
 	TCPInfoStats     map[string]interface{}
 	TCPInfoStatsAcum map[string][]float64
@@ -249,7 +246,7 @@ func GetConnStatistics(metrics []string, statType StatType) (GlobalConnStatistic
 	}
 
 	var status_port ConnStatistics
-	var listen_ports []uint16
+	listen_ports := map[uint16]Port{}
 	sockstats_list, listen_ports_data, diagErr := GetConnections()
 
 	if diagErr != nil {
@@ -257,26 +254,16 @@ func GetConnStatistics(metrics []string, statType StatType) (GlobalConnStatistic
 	}
 
 	for _, portData := range listen_ports_data {
-		listen_ports = append(listen_ports, portData.PortNum)
-		port := Port{
-			PortNum: portData.PortNum,
-		}
-		globalConnStadistics.IncomingConns[port] = ConnStatistics{
-			Local_Addr:       portData.Addr,
-			TCPInfoStats:     map[string]interface{}{},
-			TCPInfoStatsAcum: map[string][]float64{},
-		}
+		listen_ports[portData.PortNum] = portData
 	}
 
 	for _, record := range sockstats_list {
 		var port Port
 		var ok bool
 		// isListen := false
-		if slices.Contains(listen_ports, record.Local_Port) {
+		port, ok = listen_ports[record.Local_Port]
+		if ok {
 			// isListen = true
-			port = Port{
-				PortNum: record.Local_Port,
-			}
 
 			status_port, ok = globalConnStadistics.IncomingConns[port]
 			if !ok {
@@ -383,7 +370,6 @@ func GetConnStatistics(metrics []string, statType StatType) (GlobalConnStatistic
 		status_port.TCPInfoStatsAcum["Reord_seen"] = append(status_port.TCPInfoStatsAcum["Reord_seen"], float64(record.Reord_seen))
 		status_port.TCPInfoStatsAcum["Rcv_ooopack"] = append(status_port.TCPInfoStatsAcum["Rcv_ooopack"], float64(record.Rcv_ooopack))
 		status_port.TCPInfoStatsAcum["Snd_wnd"] = append(status_port.TCPInfoStatsAcum["Snd_wnd"], float64(record.Snd_wnd))
-		status_port.TotalConnections = 100
 		// fmt.Printf("====================================================================================\n")
 		// json_str,_ := json.Marshal(port)
 		// fmt.Printf("Status Port: %+v\n", string(json_str))

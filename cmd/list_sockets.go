@@ -19,7 +19,7 @@ func main() {
 
 	fmt.Printf("=== Incoming connections\n")
 	for key, status := range globalConnStadistics.IncomingConns {
-		fmt.Printf("%+v %v %+v\n", key, status.Local_Addr, status.TCPInfoStats)
+		fmt.Printf("%+v %+v\n", key, status.TCPInfoStats)
 	}
 	fmt.Printf("=== Outgoing connections\n")
 	for key, status := range globalConnStadistics.OutgoingConns {
