@@ -76,6 +76,7 @@ type GlobalConnStatistics struct {
 
 type ConnStatistics struct {
 	TotalConnections uint64
+	Local_Addr       string
 	NetStats         NetMetrics
 	TCPInfoStats     map[string]interface{}
 	TCPInfoStatsAcum map[string][]float64
@@ -248,10 +249,23 @@ func GetConnStatistics(metrics []string, statType StatType) (GlobalConnStatistic
 	}
 
 	var status_port ConnStatistics
-	sockstats_list, listen_ports, diagErr := GetConnections()
+	var listen_ports []uint16
+	sockstats_list, listen_ports_data, diagErr := GetConnections()
 
 	if diagErr != nil {
 		return globalConnStadistics, diagErr
+	}
+
+	for _, portData := range listen_ports_data {
+		listen_ports = append(listen_ports, portData.PortNum)
+		port := Port{
+			PortNum: portData.PortNum,
+		}
+		globalConnStadistics.IncomingConns[port] = ConnStatistics{
+			Local_Addr:       portData.Addr,
+			TCPInfoStats:     map[string]interface{}{},
+			TCPInfoStatsAcum: map[string][]float64{},
+		}
 	}
 
 	for _, record := range sockstats_list {

@@ -26,14 +26,14 @@ var tcpStatuses = map[uint8]string{
 	11: "CLOSING",
 }
 
-func GetConnections() ([]SockStat, []uint16, error) {
+func GetConnections() ([]SockStat, []Port, error) {
 	res, diagErr := netlink.SocketDiagTCPInfo(unix.AF_INET)
 	if diagErr != nil {
 		return nil, nil, diagErr
 	}
 
 	var records []SockStat
-	var listen_ports []uint16
+	var listen_ports []Port
 
 	for idx, _ := range res {
 		var sockstat SockStat
@@ -52,7 +52,10 @@ func GetConnections() ([]SockStat, []uint16, error) {
 
 			//If Listen port, add to array
 			if tcp_status == "LISTEN" {
-				listen_ports = append(listen_ports, record.InetDiagMsg.ID.SourcePort)
+				listen_ports = append(listen_ports, Port{
+					PortNum: record.InetDiagMsg.ID.SourcePort,
+					Addr:    record.InetDiagMsg.ID.Source.String(),
+				})
 			}
 
 			sockstat = SockStat{
