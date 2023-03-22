@@ -1,6 +1,8 @@
 package sockstats
 
 import (
+	"math"
+
 	"github.com/montanaflynn/stats"
 	"golang.org/x/exp/slices"
 )
@@ -73,6 +75,7 @@ type GlobalConnStatistics struct {
 }
 
 type ConnStatistics struct {
+	TotalConnections uint64
 	NetStats         NetMetrics
 	TCPInfoStats     map[string]float64
 	TCPInfoStatsAcum map[string][]float64
@@ -98,9 +101,16 @@ type Port struct {
 	Addr    string
 }
 
-var SockMetricList = map[string][]string{
+type StatType int
+
+const (
+	BASIC_STATS StatType = 0
+	FULL_STATS           = 1
+)
+
+var FullStatsMetrics = map[string][]string{
 	"Ca_state":                  {"max", "min", "mean"},
-	"Retransmits":               {"max", "min", "mean"},
+	"Retransmits":               {"max", "min", "mean", "p75", "p95", "p99"},
 	"Probes":                    {"max", "min", "mean"},
 	"Backoff":                   {"max", "min", "mean"},
 	"Options":                   {"max", "min", "mean"},
@@ -155,7 +165,83 @@ var SockMetricList = map[string][]string{
 	"Snd_wnd":                   {"max", "min", "mean"},
 }
 
-func GetConnStatistics() GlobalConnStatistics {
+var BasicStatsMetrics = map[string][]string{
+	"Ca_state":                  {"mean"},
+	"Retransmits":               {"mean"},
+	"Probes":                    {"mean"},
+	"Backoff":                   {"mean"},
+	"Options":                   {"mean"},
+	"Snd_wscale":                {"mean"},
+	"Rcv_wscale":                {"mean"},
+	"Delivery_rate_app_limited": {"mean"},
+	"Rto":                       {"mean"},
+	"Ato":                       {"mean"},
+	"Snd_mss":                   {"mean"},
+	"Rcv_mss":                   {"mean"},
+	"Unacked":                   {"mean"},
+	"Sacked":                    {"mean"},
+	"Lost":                      {"mean"},
+	"Retrans":                   {"mean", "p99"},
+	"Fackets":                   {"mean"},
+	"Last_data_sent":            {"mean"},
+	"Last_ack_sent":             {"mean"},
+	"Last_data_recv":            {"mean"},
+	"Last_ack_recv":             {"mean"},
+	"Pmtu":                      {"mean"},
+	"Rcv_ssthresh":              {"mean"},
+	"Rtt":                       {"mean", "p99"},
+	"Rttvar":                    {"mean"},
+	"Snd_ssthresh":              {"mean"},
+	"Snd_cwnd":                  {"mean"},
+	"Advmss":                    {"mean"},
+	"Reordering":                {"mean"},
+	"Rcv_rtt":                   {"mean"},
+	"Rcv_space":                 {"mean"},
+	"Total_retrans":             {"mean"},
+	"Pacing_rate":               {"mean"},
+	"Max_pacing_rate":           {"mean"},
+	"Bytes_acked":               {"mean"},
+	"Bytes_received":            {"mean", "p99"},
+	"Segs_out":                  {"mean"},
+	"Segs_in":                   {"mean"},
+	"Notsent_bytes":             {"mean"},
+	"Min_rtt":                   {"mean"},
+	"Data_segs_in":              {"mean"},
+	"Data_segs_out":             {"mean"},
+	"Delivery_rate":             {"mean"},
+	"Busy_time":                 {"mean"},
+	"Rwnd_limited":              {"mean"},
+	"Sndbuf_limited":            {"mean"},
+	"Delivered":                 {"mean"},
+	"Delivered_ce":              {"mean"},
+	"Bytes_sent":                {"mean", "p99"},
+	"Bytes_retrans":             {"mean"},
+	"Dsack_dups":                {"mean"},
+	"Reord_seen":                {"mean"},
+	"Rcv_ooopack":               {"mean"},
+	"Snd_wnd":                   {"mean"},
+}
+
+var FULL_METRICS = []string{"Ca_state", "Retransmits", "Probes", "Backoff", "Options", "Snd_wscale", "Rcv_wscale",
+	"Delivery_rate_app_limited", "Rto", "Ato", "Snd_mss", "Rcv_mss", "Unacked", "Sacked", "Lost", "Retrans", "Fackets",
+	"Last_data_sent", "Last_ack_sent", "Last_data_recv", "Last_ack_recv", "Pmtu", "Rcv_ssthresh", "Rtt", "Rttvar",
+	"Snd_ssthresh", "Snd_cwnd", "Advmss", "Reordering", "Rcv_rtt", "Rcv_space", "Total_retrans", "Pacing_rate", "Max_pacing_rate",
+	"Bytes_acked", "Bytes_received", "Segs_out", "Segs_in", "Notsent_bytes", "Min_rtt", "Data_segs_in", "Data_segs_out", "Delivery_rate",
+	"Busy_time", "Rwnd_limited", "Sndbuf_limited", "Delivered", "Delivered_ce", "Bytes_sent", "Bytes_retrans", "Dsack_dups", "Reord_seen", "Rcv_ooopack", "Snd_wnd"}
+
+var BASIC_METRICS = []string{"Rtt", "Rttvar", "Min_rtt", "Retransmits", "Total_retrans", "Bytes_sent", "Bytes_received", "Bytes_retrans"}
+
+func roundFloat(val float64, precision uint) float64 {
+	ratio := math.Pow(10, float64(precision))
+	return math.Round(val*ratio) / ratio
+}
+
+func GetConnStatistics(metrics []string, statType StatType) GlobalConnStatistics {
+
+	if metrics == nil {
+		metrics = BASIC_METRICS
+	}
+
 	var status_port ConnStatistics
 	sockstats_list, listen_ports := GetConnections()
 
@@ -279,6 +365,7 @@ func GetConnStatistics() GlobalConnStatistics {
 		status_port.TCPInfoStatsAcum["Reord_seen"] = append(status_port.TCPInfoStatsAcum["Reord_seen"], float64(record.Reord_seen))
 		status_port.TCPInfoStatsAcum["Rcv_ooopack"] = append(status_port.TCPInfoStatsAcum["Rcv_ooopack"], float64(record.Rcv_ooopack))
 		status_port.TCPInfoStatsAcum["Snd_wnd"] = append(status_port.TCPInfoStatsAcum["Snd_wnd"], float64(record.Snd_wnd))
+		status_port.TotalConnections = 100
 		// fmt.Printf("====================================================================================\n")
 		// json_str,_ := json.Marshal(port)
 		// fmt.Printf("Status Port: %+v\n", string(json_str))
@@ -300,23 +387,33 @@ func GetConnStatistics() GlobalConnStatistics {
 		// }
 	}
 
+	var sockMetricList map[string][]string
+	if statType == BASIC_STATS {
+		sockMetricList = BasicStatsMetrics
+	} else {
+		sockMetricList = FullStatsMetrics
+	}
+
 	for _, port_stat := range globalConnStadistics.IncomingConns {
-		for metric_name, stat_list := range SockMetricList {
+		for _, metric_name := range metrics {
+			stat_list := sockMetricList[metric_name]
 			for _, stat := range stat_list {
+				var metric_value float64
 				switch stat {
 				case "mean":
-					port_stat.TCPInfoStats[metric_name+"_"+stat], _ = stats.Mean(port_stat.TCPInfoStatsAcum[metric_name])
+					metric_value, _ = stats.Mean(port_stat.TCPInfoStatsAcum[metric_name])
 				case "max":
-					port_stat.TCPInfoStats[metric_name+"_"+stat], _ = stats.Max(port_stat.TCPInfoStatsAcum[metric_name])
+					metric_value, _ = stats.Max(port_stat.TCPInfoStatsAcum[metric_name])
 				case "min":
-					port_stat.TCPInfoStats[metric_name+"_"+stat], _ = stats.Min(port_stat.TCPInfoStatsAcum[metric_name])
+					metric_value, _ = stats.Min(port_stat.TCPInfoStatsAcum[metric_name])
 				case "p75":
-					port_stat.TCPInfoStats[metric_name+"_"+stat], _ = stats.Percentile(port_stat.TCPInfoStatsAcum[metric_name], 0.75)
+					metric_value, _ = stats.PercentileNearestRank(port_stat.TCPInfoStatsAcum[metric_name], 0.75)
 				case "p95":
-					port_stat.TCPInfoStats[metric_name+"_"+stat], _ = stats.Percentile(port_stat.TCPInfoStatsAcum[metric_name], 0.95)
+					metric_value, _ = stats.PercentileNearestRank(port_stat.TCPInfoStatsAcum[metric_name], 0.95)
 				case "p99":
-					port_stat.TCPInfoStats[metric_name+"_"+stat], _ = stats.Percentile(port_stat.TCPInfoStatsAcum[metric_name], 0.99)
+					metric_value, _ = stats.PercentileNearestRank(port_stat.TCPInfoStatsAcum[metric_name], 0.99)
 				}
+				port_stat.TCPInfoStats[metric_name+"_"+stat] = roundFloat(metric_value, 2)
 			}
 		}
 		// fmt.Printf("====================================================================================\n")
@@ -326,25 +423,29 @@ func GetConnStatistics() GlobalConnStatistics {
 		// fmt.Printf("======= NetStats: %+v\n", port_stat.NetStats)
 		// fmt.Printf("======= TCPInfoStats: %+v\n", port_stat.TCPInfoStats)
 		// fmt.Printf("======= TCPInfoStatsAcum: %+v\n", port_stat.TCPInfoStatsAcum)
+		// fmt.Printf("======= TotalConnections: %+v\n", port_stat.TotalConnections)
 	}
 
 	for _, port_stat := range globalConnStadistics.OutgoingConns {
-		for metric_name, stat_list := range SockMetricList {
+		for _, metric_name := range metrics {
+			stat_list := sockMetricList[metric_name]
 			for _, stat := range stat_list {
+				var metric_value float64
 				switch stat {
 				case "mean":
-					port_stat.TCPInfoStats[metric_name+"_"+stat], _ = stats.Mean(port_stat.TCPInfoStatsAcum[metric_name])
+					metric_value, _ = stats.Mean(port_stat.TCPInfoStatsAcum[metric_name])
 				case "max":
-					port_stat.TCPInfoStats[metric_name+"_"+stat], _ = stats.Max(port_stat.TCPInfoStatsAcum[metric_name])
+					metric_value, _ = stats.Max(port_stat.TCPInfoStatsAcum[metric_name])
 				case "min":
-					port_stat.TCPInfoStats[metric_name+"_"+stat], _ = stats.Min(port_stat.TCPInfoStatsAcum[metric_name])
+					metric_value, _ = stats.Min(port_stat.TCPInfoStatsAcum[metric_name])
 				case "p75":
-					port_stat.TCPInfoStats[metric_name+"_"+stat], _ = stats.Percentile(port_stat.TCPInfoStatsAcum[metric_name], 0.75)
+					metric_value, _ = stats.PercentileNearestRank(port_stat.TCPInfoStatsAcum[metric_name], 0.75)
 				case "p95":
-					port_stat.TCPInfoStats[metric_name+"_"+stat], _ = stats.Percentile(port_stat.TCPInfoStatsAcum[metric_name], 0.95)
+					metric_value, _ = stats.PercentileNearestRank(port_stat.TCPInfoStatsAcum[metric_name], 0.95)
 				case "p99":
-					port_stat.TCPInfoStats[metric_name+"_"+stat], _ = stats.Percentile(port_stat.TCPInfoStatsAcum[metric_name], 0.99)
+					metric_value, _ = stats.PercentileNearestRank(port_stat.TCPInfoStatsAcum[metric_name], 0.99)
 				}
+				port_stat.TCPInfoStats[metric_name+"_"+stat] = roundFloat(metric_value, 2)
 			}
 		}
 		// fmt.Printf("====================================================================================\n")

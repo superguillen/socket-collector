@@ -11,16 +11,14 @@ import (
 
 func main() {
 	//Get socket list
-	globalConnStadistics := sockstats.GetConnStatistics()
+	globalConnStadistics := sockstats.GetConnStatistics(sockstats.BASIC_METRICS, sockstats.BASIC_STATS)
 
 	fmt.Printf("=== Incoming connections\n")
 	for key, status := range globalConnStadistics.IncomingConns {
-		//json_str,_ := json.Marshal(status.TCPInfoStats)
 		fmt.Printf("%+v %+v\n", key, status.TCPInfoStats)
 	}
 	fmt.Printf("=== Outgoing connections\n")
 	for key, status := range globalConnStadistics.OutgoingConns {
-		// json_str, _ := json.Marshal(status.TCPInfoStats)
 		fmt.Printf("%+v %+v\n", key, status.TCPInfoStats)
 	}
 }
