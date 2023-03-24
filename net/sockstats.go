@@ -227,7 +227,7 @@ var FULL_METRICS = []string{"Ca_state", "Retransmits", "Probes", "Backoff", "Opt
 	"Bytes_acked", "Bytes_received", "Segs_out", "Segs_in", "Notsent_bytes", "Min_rtt", "Data_segs_in", "Data_segs_out", "Delivery_rate",
 	"Busy_time", "Rwnd_limited", "Sndbuf_limited", "Delivered", "Delivered_ce", "Bytes_sent", "Bytes_retrans", "Dsack_dups", "Reord_seen", "Rcv_ooopack", "Snd_wnd"}
 
-var BASIC_METRICS = []string{"Rtt", "Rttvar", "Min_rtt", "Delivery_rate", "Retransmits", "Total_retrans", "Bytes_sent", "Bytes_received", "Bytes_retrans"}
+var BASIC_METRICS = []string{"Rtt", "Rttvar", "Min_rtt", "Delivery_rate", "Retransmits", "Total_retrans", "Bytes_sent", "Bytes_received", "Bytes_retrans", "Bytes_acked", "Last_ack_sent", "Last_ack_recv", "Segs_out", "Segs_in", "Lost", "Retrans"}
 
 func roundFloat(val float64, precision uint) float64 {
 	ratio := math.Pow(10, float64(precision))
